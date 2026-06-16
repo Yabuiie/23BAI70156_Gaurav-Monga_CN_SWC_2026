@@ -1,0 +1,423 @@
+================================================================================
+                    COMPUTER NETWORKS - STUDY NOTES
+================================================================================
+
+Topics Covered:
+  1. IP Address Classes
+  2. Subnetting (with Solved Questions)
+  3. DHCP
+  4. DNS
+  5. HTTP / HTTPS
+  6. VLAN
+  7. STP (Spanning Tree Protocol)
+
+================================================================================
+  1. IP ADDRESS CLASSES
+================================================================================
+
+IPv4 addresses are 32-bit numbers written in dotted decimal (e.g., 192.168.1.1).
+They are divided into 5 classes based on the leading bits and range.
+
++-------+-------------------+------------------+------------------+-----------+
+| Class | Range (1st Octet) | Default Mask     | Network / Host   | Usage     |
++-------+-------------------+------------------+------------------+-----------+
+|   A   |   1  – 126        | 255.0.0.0   /8   | 8 bits / 24 bits | Large org |
+|   B   | 128  – 191        | 255.255.0.0 /16  | 16 bits / 16 bits| Medium    |
+|   C   | 192  – 223        | 255.255.255.0 /24| 24 bits / 8 bits | Small LAN |
+|   D   | 224  – 239        | N/A              | Multicast only   | Streaming |
+|   E   | 240  – 255        | N/A              | Reserved/Research| Exp only  |
++-------+-------------------+------------------+------------------+-----------+
+
+Special Addresses:
+  - 127.0.0.1         → Loopback (localhost)
+  - 0.0.0.0           → Default/Unknown host
+  - 255.255.255.255   → Broadcast (all networks)
+  - 10.x.x.x, 172.16-31.x.x, 192.168.x.x → Private (RFC 1918)
+
+Usable Hosts Formula:
+  Usable Hosts = 2^(host bits) - 2
+  (Subtract 2 for Network Address and Broadcast Address)
+
+================================================================================
+  2. SUBNETTING
+================================================================================
+
+WHY SUBNET?
+-----------
+  - Breaks a large network into smaller logical segments
+  - Reduces broadcast traffic
+  - Improves security and manageability
+  - Efficient IP allocation
+
+KEY TERMS:
+----------
+  Subnet Mask   : Determines which part of IP is network vs host
+  CIDR Notation : /prefix (e.g., /24 means 24 bits for network)
+  Network Addr  : First address in subnet (host bits all 0)
+  Broadcast Addr: Last address in subnet (host bits all 1)
+  Usable Range  : Network + 1  to  Broadcast - 1
+
+SUBNET CHEAT TABLE (Class C Base):
+-----------------------------------
+  /24 → Mask: 255.255.255.0   | Subnets: 1   | Hosts: 254
+  /25 → Mask: 255.255.255.128 | Subnets: 2   | Hosts: 126
+  /26 → Mask: 255.255.255.192 | Subnets: 4   | Hosts: 62
+  /27 → Mask: 255.255.255.224 | Subnets: 8   | Hosts: 30
+  /28 → Mask: 255.255.255.240 | Subnets: 16  | Hosts: 14
+  /29 → Mask: 255.255.255.248 | Subnets: 32  | Hosts: 6
+  /30 → Mask: 255.255.255.252 | Subnets: 64  | Hosts: 2
+  /31 → Point-to-point links only
+  /32 → Single host
+
+--------------------------------------------------------------------------------
+  SOLVED QUESTION 1
+  Q: Subnet the network 192.168.10.0/24 into 4 equal subnets.
+     Find the subnet mask, network address, broadcast, and usable host range
+     for each subnet.
+--------------------------------------------------------------------------------
+
+STEP 1: How many bits to borrow?
+  We need 4 subnets → 2^n >= 4 → n = 2 bits borrowed from host
+
+STEP 2: New prefix = /24 + 2 = /26
+  New Subnet Mask = 255.255.255.192
+  Block size = 256 - 192 = 64
+
+STEP 3: List all 4 subnets:
+
+  Subnet 1:
+    Network Address : 192.168.10.0
+    Subnet Mask     : 255.255.255.192 (/26)
+    Usable Range    : 192.168.10.1 – 192.168.10.62
+    Broadcast       : 192.168.10.63
+    Usable Hosts    : 62
+
+  Subnet 2:
+    Network Address : 192.168.10.64
+    Subnet Mask     : 255.255.255.192 (/26)
+    Usable Range    : 192.168.10.65 – 192.168.10.126
+    Broadcast       : 192.168.10.127
+    Usable Hosts    : 62
+
+  Subnet 3:
+    Network Address : 192.168.10.128
+    Subnet Mask     : 255.255.255.192 (/26)
+    Usable Range    : 192.168.10.129 – 192.168.10.190
+    Broadcast       : 192.168.10.191
+    Usable Hosts    : 62
+
+  Subnet 4:
+    Network Address : 192.168.10.192
+    Subnet Mask     : 255.255.255.192 (/26)
+    Usable Range    : 192.168.10.193 – 192.168.10.254
+    Broadcast       : 192.168.10.255
+    Usable Hosts    : 62
+
+--------------------------------------------------------------------------------
+  SOLVED QUESTION 2
+  Q: An organization has the IP 172.16.0.0/16 (Class B). Divide it into
+     subnets that support at least 500 hosts each. Find the subnet mask
+     and maximum number of subnets.
+--------------------------------------------------------------------------------
+
+STEP 1: Hosts needed = 500 → 2^h - 2 >= 500
+  2^9 = 512 → 512 - 2 = 510 ✓ (h = 9 host bits)
+
+STEP 2: Prefix = 32 - 9 = /23
+  New Subnet Mask = 255.255.254.0
+
+STEP 3: Borrowed bits = 23 - 16 = 7 bits
+  Number of subnets = 2^7 = 128 subnets
+
+STEP 4: Block size in 3rd octet = 2^1 = 2 (since /23 means 1 bit left in 3rd octet)
+
+  Subnet 1:
+    Network Address : 172.16.0.0
+    Usable Range    : 172.16.0.1 – 172.16.1.254
+    Broadcast       : 172.16.1.255
+    Usable Hosts    : 510
+
+  Subnet 2:
+    Network Address : 172.16.2.0
+    Usable Range    : 172.16.2.1 – 172.16.3.254
+    Broadcast       : 172.16.3.255
+    Usable Hosts    : 510
+
+  (Pattern continues: 172.16.4.0, 172.16.6.0, 172.16.8.0 ...)
+
+--------------------------------------------------------------------------------
+  SOLVED QUESTION 3
+  Q: Given IP address 192.168.5.130/27, find:
+     (a) Subnet mask
+     (b) Network address
+     (c) Broadcast address
+     (d) Usable host range
+     (e) Number of usable hosts
+--------------------------------------------------------------------------------
+
+(a) Subnet Mask for /27:
+    Binary:  11111111.11111111.11111111.11100000
+    Decimal: 255.255.255.224
+
+(b) Block size = 256 - 224 = 32
+    Subnet blocks: 0, 32, 64, 96, 128, 160 ...
+    130 falls in the 128 block → Network Address = 192.168.5.128
+
+(c) Broadcast Address = 192.168.5.128 + 32 - 1 = 192.168.5.159
+
+(d) Usable Host Range = 192.168.5.129 – 192.168.5.158
+
+(e) Usable Hosts = 2^5 - 2 = 32 - 2 = 30 hosts
+
+--------------------------------------------------------------------------------
+  SOLVED QUESTION 4
+  Q: A company needs 6 subnets from 10.0.0.0/8, each with at least 1000 hosts.
+     Find the appropriate subnet mask.
+--------------------------------------------------------------------------------
+
+STEP 1: Hosts per subnet >= 1000
+  2^10 = 1024 → 1024 - 2 = 1022 ✓ (need 10 host bits)
+
+STEP 2: Subnets needed = 6 → 2^n >= 6 → n = 3 bits (gives 8 subnets)
+
+STEP 3: Verify: 3 (subnet bits) + 10 (host bits) = 13 borrowed bits
+  But Class A /8 has 24 host bits.
+  13 bits used (3 subnet + 10 host) ≤ 24 available ✓
+
+STEP 4: Prefix = /8 + 3 = /11? No — correct approach:
+  Total bits used from host portion = subnet bits + host bits = 3 + 10 = 13
+  Prefix = 32 - 10 = /22
+  Subnet mask = 255.255.252.0
+
+  This gives 2^(22-8) = 2^14 = 16384 possible subnets from /8,
+  well above the 6 required.
+  Each subnet holds 2^10 - 2 = 1022 usable hosts ✓
+
+================================================================================
+  3. DHCP (Dynamic Host Configuration Protocol)
+================================================================================
+
+PURPOSE:
+  Automatically assigns IP addresses and network config to devices on a network.
+  Without DHCP, each device needs manual IP configuration.
+
+PORT: UDP 67 (server), UDP 68 (client)
+
+DORA PROCESS (4-step handshake):
+  D – DISCOVER  : Client broadcasts "I need an IP!" (255.255.255.255)
+  O – OFFER     : Server responds with an available IP offer
+  R – REQUEST   : Client broadcasts "I want that IP!"
+  A – ACK       : Server confirms the lease
+
+WHAT DHCP PROVIDES:
+  - IP Address
+  - Subnet Mask
+  - Default Gateway
+  - DNS Server Address
+  - Lease Duration (how long the IP is valid)
+
+DHCP LEASE TYPES:
+  Dynamic   : IP assigned from a pool, can change on renewal
+  Static    : Always gives same IP to a specific MAC address (reservation)
+  Automatic : IP permanently assigned (no pool expiry)
+
+DHCP RELAY AGENT:
+  Forwards DHCP messages between clients and a DHCP server on a different subnet,
+  since DHCP Discover is a broadcast and cannot cross routers.
+
+================================================================================
+  4. DNS (Domain Name System)
+================================================================================
+
+PURPOSE:
+  Translates human-readable domain names (e.g., google.com) into IP addresses.
+  Called the "Phone Book of the Internet."
+
+PORT: UDP 53 (queries), TCP 53 (zone transfers / large responses)
+
+DNS HIERARCHY:
+  Root DNS        → Top of hierarchy (.)
+  TLD Servers     → .com, .org, .in, .net
+  Authoritative   → Holds actual records for a domain (e.g., google.com)
+  Recursive       → Does the lookup on behalf of the client (ISP resolver)
+
+DNS RESOLUTION PROCESS:
+  1. User types www.example.com
+  2. OS checks local cache / hosts file
+  3. Query goes to Recursive Resolver (ISP)
+  4. Resolver asks Root server → gets TLD address
+  5. Resolver asks TLD (.com) server → gets Authoritative NS
+  6. Resolver asks Authoritative server → gets IP
+  7. IP returned to client and cached
+
+DNS RECORD TYPES:
+  A     : Maps hostname → IPv4 address
+  AAAA  : Maps hostname → IPv6 address
+  CNAME : Alias → points to another domain name
+  MX    : Mail exchange server for a domain
+  NS    : Name server for a domain
+  PTR   : Reverse lookup (IP → hostname)
+  TXT   : Text records (used for SPF, DKIM, etc.)
+  SOA   : Start of Authority (zone info)
+
+TTL (Time to Live):
+  Specifies how long a DNS record is cached before being refreshed.
+
+================================================================================
+  5. HTTP / HTTPS
+================================================================================
+
+HTTP (HyperText Transfer Protocol):
+  - Application layer protocol for transmitting web content
+  - Port: 80
+  - Stateless: each request is independent
+  - Plain text — NOT encrypted
+
+HTTPS (HTTP Secure):
+  - HTTP + TLS/SSL encryption
+  - Port: 443
+  - Encrypts data in transit → protects against eavesdropping
+  - Uses SSL/TLS certificates (issued by Certificate Authorities)
+  - Required for login pages, e-commerce, sensitive data
+
+HTTP METHODS:
+  GET     : Retrieve data (no body)
+  POST    : Send data to server (create resource)
+  PUT     : Update/replace a resource
+  PATCH   : Partially update a resource
+  DELETE  : Remove a resource
+  HEAD    : Like GET but returns headers only
+  OPTIONS : Describes communication options
+
+HTTP STATUS CODES:
+  1xx – Informational  : 100 Continue
+  2xx – Success        : 200 OK, 201 Created, 204 No Content
+  3xx – Redirection    : 301 Moved Permanently, 302 Found
+  4xx – Client Error   : 400 Bad Request, 401 Unauthorized, 403 Forbidden,
+                         404 Not Found, 429 Too Many Requests
+  5xx – Server Error   : 500 Internal Server Error, 502 Bad Gateway,
+                         503 Service Unavailable
+
+HTTP vs HTTPS COMPARISON:
+  Feature         | HTTP          | HTTPS
+  ----------------+---------------+----------------------
+  Port            | 80            | 443
+  Encryption      | None          | TLS/SSL
+  Certificate     | Not required  | Required (CA-signed)
+  Security        | Vulnerable    | Secure
+  SEO Ranking     | Lower         | Higher (Google prefers)
+  Data Integrity  | No guarantee  | Guaranteed
+
+TLS HANDSHAKE (simplified):
+  1. Client Hello (supported cipher suites, TLS version)
+  2. Server Hello + Certificate
+  3. Client verifies certificate
+  4. Session keys exchanged
+  5. Secure encrypted channel established
+
+================================================================================
+  6. VLAN (Virtual Local Area Network)
+================================================================================
+
+PURPOSE:
+  Logically segments a physical network into multiple broadcast domains
+  without needing separate physical switches.
+
+WHY USE VLANs?
+  - Reduce broadcast traffic
+  - Improve security (departments isolated)
+  - Simplify network management
+  - Group users by function, not physical location
+
+VLAN TYPES:
+  Data VLAN   : Carries user-generated traffic
+  Voice VLAN  : Dedicated to VoIP traffic (QoS priority)
+  Management VLAN : Used for switch/router management access
+  Native VLAN : Untagged traffic on a trunk port (default: VLAN 1)
+  Default VLAN: VLAN 1 (all ports belong here by default)
+
+VLAN TAGGING – IEEE 802.1Q:
+  - Standard for VLAN tagging on Ethernet frames
+  - Adds a 4-byte tag (including 12-bit VLAN ID) to the frame
+  - VLAN IDs: 1 – 4094
+
+PORT TYPES:
+  Access Port : Belongs to a single VLAN; connects to end devices (PCs, printers)
+  Trunk Port  : Carries multiple VLANs; connects switches or routers
+                Uses 802.1Q tagging to identify frames
+
+INTER-VLAN ROUTING:
+  Devices on different VLANs cannot communicate directly.
+  Requires either:
+  a) A Layer 3 switch (with SVIs – Switched Virtual Interfaces)
+  b) Router-on-a-Stick (one physical link, subinterfaces per VLAN)
+
+VLAN vs SUBNET:
+  VLAN = Layer 2 concept (separates broadcast domains)
+  Subnet = Layer 3 concept (logical IP grouping)
+  Usually 1 VLAN = 1 Subnet, but they are different things.
+
+================================================================================
+  7. STP (Spanning Tree Protocol)
+================================================================================
+
+PURPOSE:
+  Prevents Layer 2 loops in networks with redundant switch links.
+  Without STP, broadcast storms can bring down the entire network.
+
+STANDARD: IEEE 802.1D (classic STP)
+           IEEE 802.1W (RSTP – Rapid STP, faster convergence)
+           IEEE 802.1S (MSTP – Multiple STP, per-VLAN instances)
+
+THE LOOP PROBLEM:
+  If two switches are connected by multiple paths with no loop prevention,
+  a broadcast frame keeps circulating forever → Broadcast Storm → network crash.
+
+HOW STP WORKS:
+  1. Elect a Root Bridge (lowest Bridge ID wins)
+  2. Each non-root switch finds its Root Port (shortest path to root)
+  3. Each segment elects a Designated Port
+  4. All other redundant ports are put into Blocking state
+
+BRIDGE ID = Bridge Priority (default 32768) + MAC Address
+
+STP PORT STATES (Classic 802.1D):
+  Blocking    : Receives BPDUs, does NOT forward frames (loop prevention)
+  Listening   : Processes BPDUs, not forwarding data
+  Learning    : Builds MAC table, not forwarding data yet
+  Forwarding  : Fully operational, forwards data
+  Disabled    : Administratively shut down
+
+STP TIMERS:
+  Hello Time       : 2 seconds (how often BPDUs are sent)
+  Forward Delay    : 15 seconds (time in Listening and Learning states)
+  Max Age          : 20 seconds (how long to keep BPDU info)
+  Total convergence: ~30–50 seconds (why RSTP was introduced)
+
+BPDU (Bridge Protocol Data Unit):
+  Control messages exchanged between switches to elect root bridge
+  and determine port roles.
+
+RSTP (Rapid STP – 802.1W):
+  - Converges in ~1–6 seconds (vs 30–50 for STP)
+  - Port states: Discarding, Learning, Forwarding
+  - Adds port roles: Alternate Port, Backup Port
+  - Modern standard; used in most networks today
+
+PORTFAST:
+  Cisco feature that immediately puts an access port into Forwarding state.
+  Use ONLY on ports connected to end devices, never on switch-to-switch links.
+
+BPDU Guard:
+  Shuts down a PortFast-enabled port if a BPDU is received.
+  Prevents rogue switches from being connected.
+
+STP SUMMARY:
+  Root Bridge     : Central switch (lowest BID)
+  Root Port       : Best port toward root on non-root switches
+  Designated Port : Best port on each segment toward root
+  Non-Designated  : Blocked to prevent loops
+
+================================================================================
+                              END OF NOTES
+================================================================================
